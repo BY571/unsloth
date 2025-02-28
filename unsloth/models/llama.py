@@ -1878,110 +1878,110 @@ class FastLlamaModel:
         #if ((post_check - pre_check) >= 1).sum() > 1:
         #    raise RuntimeError('Unsloth currently does not support multi GPU setups - but we are working on it!')
 
-        import transformers.trainer
-        items_in_trainer = dir(transformers.trainer)
-        good_items = []
-        for item in items_in_trainer:
-            # TODO: Support Deepspeed
-            if item.startswith(("deepspeed", "xm", "met", "smp")): continue
-            if item in inner_training_loop: good_items.append(item)
-        pass
-        exec("from transformers.trainer import (" + ", ".join(x for x in good_items) + ")", globals())
+        #import transformers.trainer
+        #items_in_trainer = dir(transformers.trainer)
+        #good_items = []
+        #for item in items_in_trainer:
+        #    # TODO: Support Deepspeed
+        #    if item.startswith(("deepspeed", "xm", "met", "smp")): continue
+        #    if item in inner_training_loop: good_items.append(item)
+        #pass
+        #exec("from transformers.trainer import (" + ", ".join(x for x in good_items) + ")", globals())
 
-        start = re.search(r'logger\.info\([\"\'].+?Running training', inner_training_loop).span(0)[0]
-        end = inner_training_loop.find("\n\n", start)
-        original_debug = inner_training_loop[start:end]
-        spaces = re.search(r'\n([\s\t]{1,})', original_debug).group(0)[1:]
-        front_spaces = re.match(r'([\s\t]{1,})', inner_training_loop).group(0)
+        #start = re.search(r'logger\.info\([\"\'].+?Running training', inner_training_loop).span(0)[0]
+        #end = inner_training_loop.find("\n\n", start)
+        #original_debug = inner_training_loop[start:end]
+        #spaces = re.search(r'\n([\s\t]{1,})', original_debug).group(0)[1:]
+        #front_spaces = re.match(r'([\s\t]{1,})', inner_training_loop).group(0)
 
         # Cannot use \\ since it will cause a SyntaxWarning in Python 3.12
         # Instead use chr(92) == \\
-        debug_info = """debug_info = \\
-        f"==((====))==  Unsloth - 2x faster free finetuning | Num GPUs = {args.world_size}\\n"\\
-        f"   {chr(92)}{chr(92)}   /|    Num examples = {num_examples:,} | Num Epochs = {num_train_epochs:,}\\n"\\
-        f"O^O/ {chr(92)}_/ {chr(92)}    Batch size per device = {self._train_batch_size:,} | Gradient Accumulation steps = {args.gradient_accumulation_steps}\\n"\\
-        f"{chr(92)}        /    Total batch size = {total_train_batch_size:,} | Total steps = {max_steps:,}\\n"\\
-        f' "-____-"     Number of trainable parameters = {get_model_param_count(model, trainable_only=True):,}'
-        logger.warning(debug_info)
-        import subprocess, re, gc, numpy as np
-        a = np.array([0,])
-        try:
-            a = subprocess.check_output('nvidia-smi --query-gpu=memory.used --format=csv', shell = True)
-            a = re.findall(rb'([\\d]{1,})[\\s]{1,}M', a)
-            a = np.array([int(x.decode('utf-8'))/1024 for x in a])
-        except:
-            if not torch.cuda.is_available():
-                raise RuntimeError('Unsloth: We do not support AMD / Intel machines yet - it is a work in progress!')
-        if ((a - PRE_CHECK) >= 1).sum() > 1:
-            raise RuntimeError('Unsloth currently does not support multi GPU setups - but we are working on it!')
-        for _ in range(3):
-            gc.collect()
-            torch.cuda.empty_cache()"""
+        #debug_info = """debug_info = \\
+        #f"==((====))==  Unsloth - 2x faster free finetuning | Num GPUs = {args.world_size}\\n"\\
+        #f"   {chr(92)}{chr(92)}   /|    Num examples = {num_examples:,} | Num Epochs = {num_train_epochs:,}\\n"\\
+        #f"O^O/ {chr(92)}_/ {chr(92)}    Batch size per device = {self._train_batch_size:,} | Gradient Accumulation steps = {args.gradient_accumulation_steps}\\n"\\
+        #f"{chr(92)}        /    Total batch size = {total_train_batch_size:,} | Total steps = {max_steps:,}\\n"\\
+        #f' "-____-"     Number of trainable parameters = {get_model_param_count(model, trainable_only=True):,}'
+        #logger.warning(debug_info)
+        #import subprocess, re, gc, numpy as np
+        #a = np.array([0,])
+        #try:
+        #    a = subprocess.check_output('nvidia-smi --query-gpu=memory.used --format=csv', shell = True)
+        #    a = re.findall(rb'([\\d]{1,})[\\s]{1,}M', a)
+        #    a = np.array([int(x.decode('utf-8'))/1024 for x in a])
+        #except:
+        #    if not torch.cuda.is_available():
+        #        raise RuntimeError('Unsloth: We do not support AMD / Intel machines yet - it is a work in progress!')
+        #if ((a - PRE_CHECK) >= 1).sum() > 1:
+        #    raise RuntimeError('Unsloth currently does not support multi GPU setups - but we are working on it!')
+        #for _ in range(3):
+        #    gc.collect()
+        #    torch.cuda.empty_cache()"""
 
-        debug_info = debug_info.split('\n')
-        debug_info = "\n".join([debug_info[0]] + [spaces + x[8:] for x in debug_info[1:]])
-        inner_training_loop = inner_training_loop.replace(original_debug, debug_info)
+        #debug_info = debug_info.split('\n')
+        #debug_info = "\n".join([debug_info[0]] + [spaces + x[8:] for x in debug_info[1:]])
+        #inner_training_loop = inner_training_loop.replace(original_debug, debug_info)
 
-        debug_info = """n_total_devices = total_train_batch_size // \\
-            args.gradient_accumulation_steps // self._train_batch_size
-        if n_total_devices > 1:
-            logger.warning_once('Unsloth currently does not support multi GPU setups - but we are working on it!')
-        debug_info ="""
-        debug_info = debug_info.split('\n')
-        debug_info = "\n".join([debug_info[0]] + [spaces + x[8:] for x in debug_info[1:]])
-        inner_training_loop = inner_training_loop.replace("debug_info =", debug_info, 1)
+        #debug_info = """n_total_devices = total_train_batch_size // \\
+        #    args.gradient_accumulation_steps // self._train_batch_size
+        #if n_total_devices > 1:
+        #    logger.warning_once('Unsloth currently does not support multi GPU setups - but we are working on it!')
+        #debug_info ="""
+        #debug_info = debug_info.split('\n')
+        #debug_info = "\n".join([debug_info[0]] + [spaces + x[8:] for x in debug_info[1:]])
+        #inner_training_loop = inner_training_loop.replace("debug_info =", debug_info, 1)#
 
-        front_spaces = re.match(r"[\t\s]{1,}", inner_training_loop).group(0)
-        inner_training_loop = re.sub(r"^" + front_spaces, "", inner_training_loop, flags = re.MULTILINE)
-        inner_training_loop = inner_training_loop.replace(
-            "train_dataloader = tpu_spmd_dataloader(train_dataloader)",
-            "raise RuntimeError('Unsloth: TPUs are not yet supported!')"
-        )
-        inner_training_loop = inner_training_loop.replace(
-            "self.accelerator.free_memory()",
-            "self.accelerator.free_memory()\n" + \
-            front_spaces + "if self.is_deepspeed_enabled:"\
-            "raise RuntimeError('Unsloth: Deepspeed is not yet supported!')\n", 1,
-        )
+        #front_spaces = re.match(r"[\t\s]{1,}", inner_training_loop).group(0)
+        #inner_training_loop = re.sub(r"^" + front_spaces, "", inner_training_loop, flags = re.MULTILINE)
+        #inner_training_loop = inner_training_loop.replace(
+        #    "train_dataloader = tpu_spmd_dataloader(train_dataloader)",
+        #    "raise RuntimeError('Unsloth: TPUs are not yet supported!')"
+        #)
+        #inner_training_loop = inner_training_loop.replace(
+        #    "self.accelerator.free_memory()",
+        #    "self.accelerator.free_memory()\n" + \
+        #    front_spaces + "if self.is_deepspeed_enabled:"\
+        #    "raise RuntimeError('Unsloth: Deepspeed is not yet supported!')\n", 1,
+        #)
 
-        check_batches = """train_dataloader = self.get_train_dataloader()
-        ga  = args.gradient_accumulation_steps
-        bsz = self._train_batch_size
-        total_batches = bsz * ga * args.world_size
-        n_total_devices = total_batches // ga // bsz
-        if n_total_devices > 1:
-            logger.warning_once('Unsloth currently does not support multi GPU setups - but we are working on it!')
-            divisor = n_total_devices / 1
-            bsz = self._train_batch_size = max(int(bsz / divisor), 1)
-            if total_batches // ga // bsz > 1:
-                divisor = n_total_devices / 1
-                ga = args.gradient_accumulation_steps = max(int(ga / divisor), 1)"""
-        check_batches = check_batches.split('\n')
-        check_batches = "\n".join([check_batches[0]] + [front_spaces + x[8:] for x in check_batches[1:]])
-        inner_training_loop = inner_training_loop.replace(
-            "train_dataloader = self.get_train_dataloader()",
-            check_batches, 1,
-        )
-        inner_training_loop = inner_training_loop.replace(
-            "_inner_training_loop",
-            "_fast_inner_training_loop", 1,
-        )
-        exec(inner_training_loop, globals())
+        #check_batches = """train_dataloader = self.get_train_dataloader()
+        #ga  = args.gradient_accumulation_steps
+        #bsz = self._train_batch_size
+        #total_batches = bsz * ga * args.world_size
+        #n_total_devices = total_batches // ga // bsz
+        #if n_total_devices > 1:
+        #    logger.warning_once('Unsloth currently does not support multi GPU setups - but we are working on it!')
+        #    divisor = n_total_devices / 1
+        #    bsz = self._train_batch_size = max(int(bsz / divisor), 1)
+        #    if total_batches // ga // bsz > 1:
+        #        divisor = n_total_devices / 1
+        #        ga = args.gradient_accumulation_steps = max(int(ga / divisor), 1)"""
+        #check_batches = check_batches.split('\n')
+        #check_batches = "\n".join([check_batches[0]] + [front_spaces + x[8:] for x in check_batches[1:]])
+        #inner_training_loop = inner_training_loop.replace(
+        #    "train_dataloader = self.get_train_dataloader()",
+        #    check_batches, 1,
+        #)
+        #inner_training_loop = inner_training_loop.replace(
+        #    "_inner_training_loop",
+        #    "_fast_inner_training_loop", 1,
+        #)
+        #exec(inner_training_loop, globals())
 
-        Trainer._inner_training_loop = _fast_inner_training_loop
-        inner_training_loop = inner_training_loop.replace(
-            "is_torch_tpu_available()",
-            "False",
-        )
-        if "n_total_devices >" not in inner_training_loop:
-            raise RuntimeError('Unsloth currently does not support multi GPU setups - but we are working on it!')
-        pass
-        inner_training_loop = inner_training_loop.replace(
-            "is_sagemaker_mp_enabled()",
-            "False",
-        )
-        exec(inner_training_loop, globals())
-        Trainer._inner_training_loop = _fast_inner_training_loop
+        #Trainer._inner_training_loop = _fast_inner_training_loop
+        #inner_training_loop = inner_training_loop.replace(
+        #    "is_torch_tpu_available()",
+        #    "False",
+        #)
+        #if "n_total_devices >" not in inner_training_loop:
+        #    raise RuntimeError('Unsloth currently does not support multi GPU setups - but we are working on it!')
+        #pass
+        #inner_training_loop = inner_training_loop.replace(
+        #    "is_sagemaker_mp_enabled()",
+        #    "False",
+        #)
+        #exec(inner_training_loop, globals())
+        #Trainer._inner_training_loop = _fast_inner_training_loop
 
         # Save max_seq_length
         model.max_seq_length = max_seq_length
