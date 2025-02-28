@@ -2513,15 +2513,15 @@ class FastLlamaModel:
             # model.peft_config[active_adapter].revision = f"unsloth"
         pass
 
-        from transformers.trainer import Trainer 
-        if Trainer._inner_training_loop.__name__ != "_fast_inner_training_loop":
-            raise RuntimeError(
-                'Unsloth currently does not work on multi GPU setups - sadly we are a 2 brother team so '\
-                'enabling it will require much more work, so we have to prioritize. Please understand!\n'\
-                'We do have a separate beta version, which you can contact us about!\n'\
-                'Thank you for your understanding and we appreciate it immensely!'
-            )
-        pass
+        #from transformers.trainer import Trainer 
+        #if Trainer._inner_training_loop.__name__ != "_fast_inner_training_loop":
+        #    raise RuntimeError(
+        #        'Unsloth currently does not work on multi GPU setups - sadly we are a 2 brother team so '\
+        #        'enabling it will require much more work, so we have to prioritize. Please understand!\n'\
+        #        'We do have a separate beta version, which you can contact us about!\n'\
+        #        'Thank you for your understanding and we appreciate it immensely!'
+        #    )
+        #pass
 
         # Fix loftq issues
         # loftq_config must not = None, but rather {}
