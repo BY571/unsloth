@@ -2020,10 +2020,10 @@ class FastLlamaModel:
 
         # Add save modules
         patch_saving_functions(model)
-        Trainer._inner_training_loop = _fast_inner_training_loop
+        #Trainer._inner_training_loop = _fast_inner_training_loop
 
         # Fix gradient accumulation
-        patch_gradient_accumulation_fix(Trainer)
+        #patch_gradient_accumulation_fix(Trainer)
 
         # Save tokenizer for inference purposes
         tokenizer.padding_side = "left" # Force inference
